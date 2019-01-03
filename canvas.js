@@ -7,6 +7,7 @@ var continueGame = false;
 var keysdown = {};
 var robot = new Robot()
 var map = new Map();
+var camera = new Camera(map, gameCanvas.width, gameCanvas.height)
 var platforms = [];
 var hazards = [];
 // var platform = new PlatformOne({x: gameCanvas.width/2, y: gameCanvas.height - robot.scaledHeight }, {x: 2, y:0 });
@@ -113,6 +114,7 @@ function gameAnimate(char) {
         // }
         gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
         frameCount = 0;
+        // camera.move();
         map.update();
         platforms.forEach(function (platform) {
             platform.update();
@@ -121,6 +123,7 @@ function gameAnimate(char) {
             hazard.update();
         })
         robot.update();
+        
         requestAnimationFrame(gameAnimate)
     }
 }
@@ -464,9 +467,10 @@ function Saw(position, velocity) {
 
 function Map() {
     this.map = new Image();
-    this.map.src = './media/imgs/sprites/factoryBG.png';
-    this.height = 720;
+    this.map.src = '../media/imgs/sprites/threeXthreeMap.png';
+    this.height = 4096;
     this.width = 3840;
+    this.tileSize = 128;
     this.position = {
         x: 0,
         y: 0
@@ -475,9 +479,39 @@ function Map() {
         x: 0,
         y: 0
     }
+    this.cols = 30;
+    this.rows = 32;
+    this.frameX = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
+    this.frameY = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,31,32]
 
     this.update = function () {
-        this.drawFrame(this.position.x, this.position.y)
+        var startCol = Math.floor(camera.x / this.tileSize);
+        var endCol = startCol + (camera.width / this.tileSize);
+        var startRow = Math.floor(camera.y / this.tileSize);
+        var endRow = startRow + (camera.height / this.tileSize);
+        var offsetX = -camera.x + startCol * this.tileSize;
+        var offsetY =  -camera.y + startRow * this.tileSize;
+
+        for (var c = startCol; c <= endCol; c++) {
+            for (var r = startRow; r <= endRow; r++) {
+                var x = (c - startCol) * this.tileSize + offsetX;
+                var y = (r - startRow) * this.tileSize + offsetY;
+               
+                    gameCtx.drawImage(
+                        this.map, // image
+                        Math.round(x), // source x
+                        Math.round(y), // source y
+                        this.tileSize, // source width
+                        this.tileSize, // source height
+                        Math.round(x),  // target x
+                        Math.round(y), // target y
+                        this.tileSize, // target width
+                        this.tileSize // target height
+                    );
+                
+            }
+        }
+        // this.drawFrame(this.position.x, this.position.y)
     }
 
     this.drawFrame = function (canvasX, canvasY) {
@@ -486,6 +520,32 @@ function Map() {
     }
 }
 
+//#################################################################################
+/////---------------Camera----------------------------------------------------------------------//
+//################################################################################
+
+function Camera(map, width, height){
+    this.x = robot.position.x;
+    this.width = width;
+    this.height = height;
+    this.y = robot.position.y;
+    this.maxX = map.cols * map.tileSize - width;
+    this.maxY = map.rows * map.tileSize - height; 
+    this.speed = 256 
+
+    this.move = function(){
+        var deltaX = robot.position.x;
+        var deltaY = robot.position.y;
+        this.x = Math.max(0, Math.min(deltaX, this.maxX))
+        this.y = Math.max(0, Math.min(deltaY, this.maxY))
+    }
+    // this.move = function(delta, dirx, diry){
+    //     this.x += dirx * this.speed * delta 
+    //     this.y += diry * this.speed * delta 
+    //     this.x = Math.max(0, Math.min(this.x, this.maxX))
+    //     this.y = Math.max(0, Math.min(this.y, this.maxY))
+    // }
+}
 //#################################################################################
 /////---------------Helpers----------------------------------------------------------------------//
 //################################################################################
